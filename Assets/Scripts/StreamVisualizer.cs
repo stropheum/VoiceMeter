@@ -39,20 +39,14 @@ namespace VoiceMeter
                 var verts = new UIVertex[6];
                 verts[0].position = new Vector2(xBounds.x, -pivot.y * size.y);
                 verts[0].color = Color.black;
-            
                 verts[1].position = new Vector2(xBounds.x, (1f - pivot.y) * size.y);
                 verts[1].color = Color.blue;
-            
                 verts[2].position = new Vector2(xBounds.y, (1f - pivot.y) * size.y);
                 verts[2].color = Color.blue;
-            
                 verts[3] = verts[2];
-                
                 verts[4].position = new Vector2(xBounds.y, -pivot.y * size.y);
                 verts[4].color = Color.black;
-                
                 verts[5] = verts[0];
-                
                 _vertices.AddRange(verts); // Add 2 triangles to make the quad
                 SetVerticesDirty();
             }

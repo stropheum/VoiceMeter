@@ -10,7 +10,7 @@ namespace VoiceMeter.Discord
         [JsonProperty] public User User { get; set; }
         [JsonProperty] public int Ssrc { get; set; }
         [JsonProperty] public long UserId { get; set; }
-        [JsonProperty] public byte[] Frame { get; set; } //NOTE: 1 frame(byte) == 20ms
+        [JsonProperty] public byte[] Frame { get; set; }
     }
     
     [Serializable]
