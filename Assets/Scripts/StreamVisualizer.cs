@@ -1,8 +1,8 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
 using VoiceMeter.Discord;
 
 namespace VoiceMeter
@@ -10,34 +10,70 @@ namespace VoiceMeter
     [RequireComponent(typeof(CanvasRenderer))]
     public class StreamVisualizer : Graphic
     {
-        public long TrackedUserId { get; set; }
-
-        [SerializeField] private float _streamWindowInSeconds = 30f;
-        [SerializeField] private DiscordVoiceListener _discordVoiceListener;
-
         private List<UIVertex> _vertices = new();
-        private List<Vector3> _triangles = new();
+        
+        public float TimeWindow { get; set; }
+        public List<VoiceReceiveEvent> Models { get; set; } = new();
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
-            RenderQuad(vh);
+            Debug.Assert(_vertices.Count % 3 == 0);
+            vh.AddUIVertexTriangleStream(_vertices);
         }
 
-        public void SetSegments(IEnumerable<VoiceReceiveEvent> segments)
+        private void FixedUpdate()
+        {
+            RenderSegments();
+        }
+
+        private void RenderSegments()
         {
             Vector2 size = rectTransform.rect.size;
             Vector2 pivot = rectTransform.pivot;
-            UIVertex vertex = UIVertex.simpleVert;
             
             _vertices.Clear();
-            IEnumerable<VoiceReceiveEvent> filteredEvents = segments
-                .Where(x => x.UserId == TrackedUserId);
-            
-            foreach (VoiceReceiveEvent voiceReceiveEvent in filteredEvents)
+            foreach (VoiceReceiveEvent model in Models.ToArray())
             {
-                // vertex.position = new Vector2(-);
+                Vector2 xBounds = MapTimeSpanToPercent(model);
+                var verts = new UIVertex[6];
+                verts[0].position = new Vector2(xBounds.x, -pivot.y * size.y);
+                verts[0].color = Color.black;
+            
+                verts[1].position = new Vector2(xBounds.x, (1f - pivot.y) * size.y);
+                verts[1].color = Color.blue;
+            
+                verts[2].position = new Vector2(xBounds.y, (1f - pivot.y) * size.y);
+                verts[2].color = Color.blue;
+            
+                verts[3] = verts[2];
+                
+                verts[4].position = new Vector2(xBounds.y, -pivot.y * size.y);
+                verts[4].color = Color.black;
+                
+                verts[5] = verts[0];
+                
+                _vertices.AddRange(verts); // Add 2 triangles to make the quad
+                SetVerticesDirty();
             }
+        }
+
+        private Vector2 MapTimeSpanToPercent(VoiceReceiveEvent model)
+        {
+            Vector2 size = rectTransform.rect.size;
+            Vector2 pivot = rectTransform.pivot;
+
+            float segmentDuration = (model.Frame.Length * 1) / 1000f;
+            if (segmentDuration == 0f)
+            {
+                return Vector2.zero;
+            }
+
+            var startOffset = (float)(model.TimeStamp - (DateTime.Now - TimeSpan.FromSeconds(TimeWindow))).TotalSeconds;
+            var bound = pivot.x * size.x;
+            return new Vector2(
+                math.remap(0f, 1f, -bound, bound, startOffset / TimeWindow), 
+                math.remap(0f, 1f, -bound, bound, (startOffset + segmentDuration) / TimeWindow));
         }
 
         private void RenderQuad(VertexHelper vh)

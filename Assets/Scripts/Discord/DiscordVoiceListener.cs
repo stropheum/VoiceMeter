@@ -15,6 +15,7 @@ namespace VoiceMeter.Discord
     public class DiscordVoiceListener : MonoBehaviour
     {
         [SerializeField] private UserStreamDisplay _userStreamDisplayPrefab;
+        [field: SerializeField] public float DisplayWindowInSeconds { get; private set; } = 30f;
         private Process _process;
         private StreamReader _processOutputStream;
         private Dictionary<long, UserStreamDisplay> _userStreamDisplays = new();
@@ -82,9 +83,17 @@ namespace VoiceMeter.Discord
                 var message = JsonConvert.DeserializeObject<MessageLogModel>(e.Data);
                 if (message.Name == "VoiceReceive")
                 {
-                    var model = JsonConvert.DeserializeObject<VoiceReceiveEvent>(message.Payload);
-                    RecordVoiceEvent(model);
-                    Debug.Log(JsonConvert.SerializeObject(model));
+                    try
+                    {
+                        var model = JsonConvert.DeserializeObject<VoiceReceiveEvent>(message.Payload);
+                        RecordVoiceEvent(model);
+                        Debug.Log(JsonConvert.SerializeObject(model));
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogError(exception);
+                        throw;
+                    }
                 }
             }
             catch (Exception exception)
@@ -137,9 +146,9 @@ namespace VoiceMeter.Discord
         private void SpawnNewUserStreamDisplay(VoiceReceiveEvent initialEvent)
         {
             UserStreamDisplay newUserStream = Instantiate(_userStreamDisplayPrefab, transform);
+            newUserStream.Context = this;
             newUserStream.UserId = initialEvent.UserId;
             newUserStream.Username.text = initialEvent.User.Username;
-            newUserStream.RegisterVoiceEventCallback(this);
             _userStreamDisplays[initialEvent.UserId] = newUserStream;
         }
     }

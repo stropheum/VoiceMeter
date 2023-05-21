@@ -581,6 +581,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _userStreamDisplayPrefab: {fileID: 642091036132905451, guid: 7c82236f090b2f147847aa5b9034dcd5,
     type: 3}
+  <DisplayWindowInSeconds>k__BackingField: 30
 --- !u!114 &1597295040
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -602,10 +603,10 @@ MonoBehaviour:
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
+  m_ChildControlWidth: 1
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
+  m_ChildScaleHeight: 1
   m_ReverseArrangement: 0
 --- !u!1 &2001810551
 GameObject:

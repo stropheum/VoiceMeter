@@ -10,8 +10,20 @@ namespace VoiceMeter
     {
         [field: SerializeField][UsedImplicitly] public TextMeshProUGUI Username { get; set; }
         [field: SerializeField][UsedImplicitly] public StreamVisualizer Visualizer { get; set; }
+
+        public DiscordVoiceListener Context
+        {
+            get => _context;
+            set
+            {
+                UnregisterVoiceEventCallback(_context);
+                _context = value;
+                RegisterVoiceEventCallback(_context);
+            }
+        }
         public long UserId {  get; set; }
         private List<VoiceReceiveEvent> _userVoiceEvents = new();
+        private DiscordVoiceListener _context;
 
         private void Awake()
         {
@@ -19,13 +31,32 @@ namespace VoiceMeter
             Debug.Assert(Visualizer != null);
         }
 
-        public void RegisterVoiceEventCallback(DiscordVoiceListener context)
+        private void Start()
         {
+            Debug.Assert(Context != null);
+            Visualizer.TimeWindow = Context.DisplayWindowInSeconds;
+        }
+
+        private void Update()
+        {
+            Visualizer.Models = _userVoiceEvents;
+        }
+
+        private void RegisterVoiceEventCallback(DiscordVoiceListener context)
+        {
+            if (context == null)
+            {
+                return;
+            }
             context.OnVoiceReceive += VoiceEventCallback;
         }
 
-        public void UnregisterVoiceEventCallback(DiscordVoiceListener context)
+        private void UnregisterVoiceEventCallback(DiscordVoiceListener context)
         {
+            if (context == null)
+            {
+                return;
+            }
             context.OnVoiceReceive -= VoiceEventCallback;
         }
         
