@@ -1,8 +1,11 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using TMPro;
 using UnityEngine;
 using VoiceMeter.Discord;
+using Random = UnityEngine.Random;
 
 namespace VoiceMeter
 {
@@ -10,6 +13,8 @@ namespace VoiceMeter
     {
         [field: SerializeField][UsedImplicitly] public TextMeshProUGUI Username { get; set; }
         [field: SerializeField][UsedImplicitly] public StreamVisualizer Visualizer { get; set; }
+        
+        private const float GapIntervalThreshold = 25f;
 
         public DiscordVoiceListener Context
         {
@@ -22,7 +27,6 @@ namespace VoiceMeter
             }
         }
         public long UserId {  get; set; }
-        private List<VoiceReceiveEvent> _userVoiceEvents = new();
         private DiscordVoiceListener _context;
 
         private void Awake()
@@ -35,11 +39,6 @@ namespace VoiceMeter
         {
             Debug.Assert(Context != null);
             Visualizer.TimeWindow = Context.DisplayWindowInSeconds;
-        }
-
-        private void Update()
-        {
-            Visualizer.Models = _userVoiceEvents;
         }
 
         private void RegisterVoiceEventCallback(DiscordVoiceListener context)
@@ -66,7 +65,38 @@ namespace VoiceMeter
             {
                 return;
             }
-            _userVoiceEvents.Add(model);
+            
+            DateTime modelEnd = model.TimeStamp + TimeSpan.FromMilliseconds(20f);            
+
+            if (Visualizer.Models.Count == 0)
+            {
+                Visualizer.Models.Add(new StreamSegmentModel
+                {
+                    Start = model.TimeStamp,
+                    End = modelEnd
+                });
+                return;
+            }
+
+            StreamSegmentModel lastSegment = Visualizer.Models.Last();
+            
+            TimeSpan gapInterval = model.TimeStamp - lastSegment.End;
+            if (gapInterval.TotalMilliseconds <= GapIntervalThreshold)
+            {
+                Visualizer.Models[^1] = new StreamSegmentModel
+                {
+                    Start = lastSegment.Start,
+                    End = modelEnd
+                };
+            }
+            else
+            {
+                Visualizer.Models.Add(new StreamSegmentModel
+                {
+                    Start = model.TimeStamp,
+                    End = modelEnd
+                });
+            }
         }
     }
 }

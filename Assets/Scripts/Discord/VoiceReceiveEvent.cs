@@ -10,7 +10,21 @@ namespace VoiceMeter.Discord
         [JsonProperty] public User User { get; set; }
         [JsonProperty] public int Ssrc { get; set; }
         [JsonProperty] public long UserId { get; set; }
-        [JsonProperty] public byte[] Frame { get; set; }
+        [JsonProperty] public string Frame { get; set; }
+
+        public VoiceReceiveEvent(VoiceReceiveEvent rhs)
+        {
+            if (rhs == null || rhs == this)
+            {
+                return;
+            }
+            
+            TimeStamp = rhs.TimeStamp;
+            User = rhs.User;
+            Ssrc = rhs.Ssrc;
+            UserId = rhs.UserId;
+            Frame = rhs.Frame;
+        }
     }
     
     [Serializable]
