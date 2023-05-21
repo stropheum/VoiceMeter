@@ -63,7 +63,7 @@ namespace VoiceMeter
             Vector2 size = rectTransform.rect.size;
             Vector2 pivot = rectTransform.pivot;
 
-            float segmentDuration = (model.Frame.Length * 1) / 1000f;
+            float segmentDuration = (model.Frame.Length * 7) / 1000f;
             if (segmentDuration == 0f)
             {
                 return Vector2.zero;
