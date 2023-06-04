@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,7 +15,7 @@ namespace VoiceMeter
         private List<UIVertex> _vertices = new();
         
         public float TimeWindow { get; set; }
-        public List<StreamSegmentModel> Models { get; set; } = new();
+        public List<StreamSegmentModel> Models { get; } = new();
 
         protected override void Start()
         {
@@ -29,9 +30,35 @@ namespace VoiceMeter
             vh.AddUIVertexTriangleStream(_vertices);
         }
 
+        private void Update()
+        {
+            PruneExpiredSegments();
+        }
+
         private void FixedUpdate()
         {
             RenderSegments();
+        }
+        
+        private void PruneExpiredSegments()
+        {
+            if (Models == null || Models.Count == 0)
+            {
+                return;
+            }
+            
+            bool itemRemoved = true;
+            while (itemRemoved)
+            {
+                itemRemoved = false;
+                StreamSegmentModel last = Models.Last();
+                DateTime epoch = DateTime.Now - TimeSpan.FromSeconds(TimeWindow);
+                if (last.End < epoch)
+                {
+                    Models.RemoveAt(Models.Count - 1);
+                    itemRemoved = true;
+                }
+            }
         }
 
         private void RenderSegments()
@@ -76,32 +103,6 @@ namespace VoiceMeter
                 math.remap(0f, 1f, -bound, bound, startOffset / TimeWindow), 
                 math.remap(0f, 1f, -bound, bound, (startOffset + segmentDuration) / TimeWindow));
             return result;
-        }
-
-        private void RenderQuad(VertexHelper vh)
-        {
-            Vector2 size = rectTransform.rect.size;
-            Vector2 pivot = rectTransform.pivot;
-            UIVertex vertex = UIVertex.simpleVert;
-
-            vertex.position = new Vector2(-pivot.x * size.x, -pivot.y * size.y);
-            vertex.color = Color.black;
-            vh.AddVert(vertex);
-            
-            vertex.position = new Vector2(-pivot.x * size.x, (1f - pivot.y) * size.y);
-            vertex.color = Color.blue;
-            vh.AddVert(vertex);
-            
-            vertex.position = new Vector2((1f - pivot.x) * size.x, (1f - pivot.y) * size.y);
-            vertex.color = Color.blue;
-            vh.AddVert(vertex);
-            
-            vertex.position = new Vector2((1f - pivot.x) * size.x, -pivot.y * size.y);
-            vertex.color = Color.black;
-            vh.AddVert(vertex);
-            
-            vh.AddTriangle(0, 1, 2);
-            vh.AddTriangle(2, 3, 0);
         }
     }
 }

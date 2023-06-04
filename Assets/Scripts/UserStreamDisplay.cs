@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using TMPro;
 using UnityEngine;
 using VoiceMeter.Discord;
-using Random = UnityEngine.Random;
 
 namespace VoiceMeter
 {
