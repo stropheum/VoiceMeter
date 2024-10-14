@@ -47,7 +47,7 @@ namespace VoiceMeter
                 return;
             }
             
-            bool itemRemoved = true;
+            var itemRemoved = true;
             while (itemRemoved)
             {
                 itemRemoved = false;

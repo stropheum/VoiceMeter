@@ -58,6 +58,7 @@ namespace VoiceMeter.Discord
                 RedirectStandardInput = true,
             };
             _process = Process.Start(startInfo);
+            Debug.Assert(_process != null);
             _process.OutputDataReceived += ProcessOnOutputDataReceived;
             _process.ErrorDataReceived += ProcessOnErrorDataReceived;
             _process.BeginOutputReadLine();
