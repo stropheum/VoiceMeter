@@ -97,7 +97,7 @@ namespace VoiceMeter.Discord
                     }
                 }
             }
-            catch (Exception exception)
+            catch (Exception _)
             {
                 Debug.Log($"Non-event log: {e.Data}");
             }
