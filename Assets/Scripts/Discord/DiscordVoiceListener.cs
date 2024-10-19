@@ -44,7 +44,7 @@ namespace VoiceMeter.Discord
 
         private IEnumerator Connect()
         {
-            const string libPath = @"E:\Users\strop\RiderProjects\VoiceMeterBot\VoiceMeterBot\bin\Debug\net7.0";
+            const string libPath = @"E:\Users\strop\Documents\GitHub\VoiceMeterBot\VoiceMeterBot\bin\Debug\net7.0";
             const string processName = "VoiceMeterBot.exe";
             var startInfo = new ProcessStartInfo
             {
