@@ -42,9 +42,9 @@ namespace VoiceMeter.Discord
         [JsonProperty] public object Locale { get; set; }
         [JsonProperty] public object Verified { get; set; }
         [JsonProperty] public object Email { get; set; }
-        [JsonProperty] public int Flags { get; set; }
+        [JsonProperty] public int? Flags { get; set; }
         [JsonProperty] public object PremiumType { get; set; }
-        [JsonProperty] public int PublicFlags { get; set; }
+        [JsonProperty] public int? PublicFlags { get; set; }
         [JsonProperty] public object AvatarDecorationHash { get; set; }
         [JsonProperty] public bool HasAvatar { get; set; }
         [JsonProperty] public bool HasBanner { get; set; }

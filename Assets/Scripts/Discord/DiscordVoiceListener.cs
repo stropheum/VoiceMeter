@@ -82,19 +82,21 @@ namespace VoiceMeter.Discord
             try
             {
                 var message = JsonConvert.DeserializeObject<MessageLogModel>(e.Data);
-                if (message.Name == "VoiceReceive")
+                if (message.Name != "VoiceReceive")
                 {
-                    try
-                    {
-                        var model = JsonConvert.DeserializeObject<VoiceReceiveEvent>(message.Payload);
-                        RecordVoiceEvent(model);
-                        Debug.Log(JsonConvert.SerializeObject(model));
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.LogError(exception);
-                        throw;
-                    }
+                    return;
+                }
+                
+                try
+                {
+                    var model = JsonConvert.DeserializeObject<VoiceReceiveEvent>(message.Payload);
+                    RecordVoiceEvent(model);
+                    Debug.Log(JsonConvert.SerializeObject(model));
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError(exception);
+                    throw;
                 }
             }
             catch (Exception _)
