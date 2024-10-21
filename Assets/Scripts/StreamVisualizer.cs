@@ -9,7 +9,7 @@ using Random = UnityEngine.Random;
 namespace VoiceMeter
 {
     [RequireComponent(typeof(CanvasRenderer))]
-    public class StreamVisualizer : Graphic
+    public class StreamVisualizer : MaskableGraphic
     {
         [field: SerializeField] public Color Color { get; set; } = Color.blue;
         private List<UIVertex> _vertices = new();
