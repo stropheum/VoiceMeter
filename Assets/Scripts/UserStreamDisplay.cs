@@ -89,6 +89,8 @@ namespace VoiceMeter
             }
             else
             {
+                //TODO: instead of just creating models that are all rendered by one script, instantiate individual segments, spawn them at the correct offset, and just animate them across until they exit the left side of the mask
+                //TODO: Stop making shit so complicated
                 Visualizer.Models.Add(new StreamSegmentModel
                 {
                     Start = model.TimeStamp,
