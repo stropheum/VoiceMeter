@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using JetBrains.Annotations;
 using TMPro;
 using UnityEngine;
 using VoiceMeter.Discord;
+using Debug = UnityEngine.Debug;
 
 namespace VoiceMeter
 {
@@ -11,8 +14,10 @@ namespace VoiceMeter
     {
         [field: SerializeField][UsedImplicitly] public TextMeshProUGUI Username { get; set; }
         [field: SerializeField][UsedImplicitly] public StreamVisualizer Visualizer { get; set; }
+        [SerializeField] private StreamSegment _streamSegmentPrefab;
         
-        private const float GapIntervalThreshold = 25f;
+        private const float GapIntervalThresholdInMillis = 25f;
+        private Queue<VoiceReceiveEvent> _voiceReceiveEventQueue = new();
 
         public DiscordVoiceListener Context
         {
@@ -31,12 +36,18 @@ namespace VoiceMeter
         {
             Debug.Assert(Username != null);
             Debug.Assert(Visualizer != null);
+            Debug.Assert(_streamSegmentPrefab != null);
         }
 
         private void Start()
         {
             Debug.Assert(Context != null);
             Visualizer.TimeWindow = Context.DisplayWindowInSeconds;
+        }
+
+        private void Update()
+        {
+            ProcessVoiceReceiveEventQueue();
         }
 
         private void RegisterVoiceEventCallback(DiscordVoiceListener context)
@@ -59,43 +70,111 @@ namespace VoiceMeter
         
         private void VoiceEventCallback(VoiceReceiveEvent model)
         {
-            if (model.UserId != UserId)
-            {
-                return;
-            }
-            
-            DateTime modelEnd = model.TimeStamp + TimeSpan.FromMilliseconds(20f);            
+            _voiceReceiveEventQueue.Enqueue(model);
+            //TODO: move this stuff below into a helper method to process from the queue on update
+            // if (model.UserId != UserId)
+            // {
+            //     return;
+            // }
+            //
+            // DateTime modelEnd = model.TimeStamp + TimeSpan.FromMilliseconds(20f);            
+            //
+            // if (Visualizer.StreamSegments.Count == 0)
+            // {
+            //     // Visualizer.StreamSegments.Add(new StreamSegmentModel
+            //     // {
+            //     //     Start = model.TimeStamp,
+            //     //     End = modelEnd
+            //     // });
+            //     Visualizer.GenerateSegment(new StreamSegmentModel
+            //     {
+            //         Start = model.TimeStamp,
+            //         End = modelEnd
+            //     });
+            //     return;
+            // }
+            //
+            // StreamSegment lastSegment = Visualizer.StreamSegments.Last();
+            //
+            // TimeSpan gapInterval = model.TimeStamp - lastSegment.Model.End;
+            // if (gapInterval.TotalMilliseconds <= GapIntervalThresholdInMillis)
+            // {
+            //     Visualizer.StitchLastSegment(new StreamSegmentModel
+            //     {
+            //         Start = lastSegment.Model.Start,
+            //         End = modelEnd
+            //     });
+            //     // Visualizer.StreamSegments[^1].Model = new StreamSegmentModel
+            //     // {
+            //     //     Start = lastSegment.Model.Start,
+            //     //     End = modelEnd
+            //     // };
+            // }
+            // else
+            // {
+            //     //TODO: instead of just creating models that are all rendered by one script, instantiate individual segments, spawn them at the correct offset, and just animate them across until they exit the left side of the mask
+            //     //TODO: Stop making shit so complicated
+            //     Visualizer.GenerateSegment(new StreamSegmentModel
+            //     {
+            //         Start = model.TimeStamp,
+            //         End = modelEnd
+            //     });
+            // }
+        }
 
-            if (Visualizer.Models.Count == 0)
+        private void ProcessVoiceReceiveEventQueue()
+        {
+            while (_voiceReceiveEventQueue.Count > 0)
             {
-                Visualizer.Models.Add(new StreamSegmentModel
+                VoiceReceiveEvent model = _voiceReceiveEventQueue.Dequeue();
+                if (model.UserId != UserId)
                 {
-                    Start = model.TimeStamp,
-                    End = modelEnd
-                });
-                return;
-            }
-
-            StreamSegmentModel lastSegment = Visualizer.Models.Last();
+                    return;
+                }
             
-            TimeSpan gapInterval = model.TimeStamp - lastSegment.End;
-            if (gapInterval.TotalMilliseconds <= GapIntervalThreshold)
-            {
-                Visualizer.Models[^1] = new StreamSegmentModel
+                DateTime modelEnd = model.TimeStamp + TimeSpan.FromMilliseconds(20f);            
+
+                if (Visualizer.StreamSegments.Count == 0)
                 {
-                    Start = lastSegment.Start,
-                    End = modelEnd
-                };
-            }
-            else
-            {
-                //TODO: instead of just creating models that are all rendered by one script, instantiate individual segments, spawn them at the correct offset, and just animate them across until they exit the left side of the mask
-                //TODO: Stop making shit so complicated
-                Visualizer.Models.Add(new StreamSegmentModel
+                    // Visualizer.StreamSegments.Add(new StreamSegmentModel
+                    // {
+                    //     Start = model.TimeStamp,
+                    //     End = modelEnd
+                    // });
+                    Visualizer.GenerateSegment(_streamSegmentPrefab, new StreamSegmentModel
+                    {
+                        Start = model.TimeStamp,
+                        End = modelEnd
+                    });
+                    return;
+                }
+            
+                StreamSegment lastSegment = Visualizer.StreamSegments.Last();
+            
+                TimeSpan gapInterval = model.TimeStamp - lastSegment.Model.End;
+                if (gapInterval.TotalMilliseconds <= GapIntervalThresholdInMillis)
                 {
-                    Start = model.TimeStamp,
-                    End = modelEnd
-                });
+                    Visualizer.StitchLastSegment(new StreamSegmentModel
+                    {
+                        Start = lastSegment.Model.Start,
+                        End = modelEnd
+                    });
+                    // Visualizer.StreamSegments[^1].Model = new StreamSegmentModel
+                    // {
+                    //     Start = lastSegment.Model.Start,
+                    //     End = modelEnd
+                    // };
+                }
+                else
+                {
+                    //TODO: instead of just creating models that are all rendered by one script, instantiate individual segments, spawn them at the correct offset, and just animate them across until they exit the left side of the mask
+                    //TODO: Stop making shit so complicated
+                    Visualizer.GenerateSegment(_streamSegmentPrefab, new StreamSegmentModel
+                    {
+                        Start = model.TimeStamp,
+                        End = modelEnd
+                    });
+                }
             }
         }
     }
