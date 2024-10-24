@@ -16,6 +16,7 @@ namespace VoiceMeter
         
         public float TimeWindow { get; set; }
         public List<StreamSegmentModel> Models { get; } = new();
+        private float _elapsedTime;
 
         protected override void Start()
         {
@@ -32,6 +33,7 @@ namespace VoiceMeter
 
         private void Update()
         {
+            _elapsedTime += Time.deltaTime;
             PruneExpiredSegments();
         }
 
@@ -98,7 +100,7 @@ namespace VoiceMeter
             }
 
             var startOffset = (float)(model.Start - (DateTime.Now - TimeSpan.FromSeconds(TimeWindow))).TotalSeconds;
-            var bound = pivot.x * size.x;
+            float bound = pivot.x * size.x;
             var result = new Vector2(
                 math.remap(0f, 1f, -bound, bound, startOffset / TimeWindow), 
                 math.remap(0f, 1f, -bound, bound, (startOffset + segmentDuration) / TimeWindow));
