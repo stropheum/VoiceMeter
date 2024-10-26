@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -37,10 +34,10 @@ namespace VoiceMeter
             PruneExpiredSegments();
         }
 
-        private void FixedUpdate()
-        {
-            RenderSegments();
-        }
+        // private void FixedUpdate()
+        // {
+        //     RenderSegments();
+        // }
         
         private void PruneExpiredSegments()
         {
@@ -113,21 +110,24 @@ namespace VoiceMeter
         public void StitchLastSegment(StreamSegmentModel modelToStitch)
         {
             StreamSegment lastSegment = StreamSegments[^1];
-            lastSegment.Model = new StreamSegmentModel
-            {
-                Start = lastSegment.Model.Start,
-                End = modelToStitch.End
-            };
+            // lastSegment.SetStreamSegmentModel(new StreamSegmentModel
+            // {
+            //     Start = lastSegment.Model.Start,
+            //     End = modelToStitch.End
+            // });
+            lastSegment.StitchSegmentModel(modelToStitch);
         }
 
         public void GenerateSegment(StreamSegment prefab, StreamSegmentModel model)
         {
+            // var position = new Vector3(rectTransform.rect.width, 0, 0);
+            Vector3 position = Vector3.zero;
             StreamSegment segment = Instantiate(prefab, transform);
-            segment.transform.localPosition = Vector3.zero;
+            segment.DestroyAfterInactiveSeconds = TimeWindow;
+            segment.transform.localPosition = position;
             segment.VisualizerContext = this;
-            segment.Model = model;
-            //TODO: map image size to parent window rect. clamp vertical, map duration to width. left-anchored so it will only grow to the right when width is changed
-            //TODO: also need a scroll that will displace its position backwards one second's worth for every second it's alive
+            segment.SetStreamSegmentModel(model);
+            StreamSegments.Add(segment);
         }
     }
 }

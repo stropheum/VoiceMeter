@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using JetBrains.Annotations;
 using TMPro;
@@ -151,12 +150,12 @@ namespace VoiceMeter
             
                 StreamSegment lastSegment = Visualizer.StreamSegments.Last();
             
-                TimeSpan gapInterval = model.TimeStamp - lastSegment.Model.End;
+                TimeSpan gapInterval = model.TimeStamp - lastSegment.EndTime;
                 if (gapInterval.TotalMilliseconds <= GapIntervalThresholdInMillis)
                 {
                     Visualizer.StitchLastSegment(new StreamSegmentModel
                     {
-                        Start = lastSegment.Model.Start,
+                        Start = lastSegment.StartTime,
                         End = modelEnd
                     });
                     // Visualizer.StreamSegments[^1].Model = new StreamSegmentModel
