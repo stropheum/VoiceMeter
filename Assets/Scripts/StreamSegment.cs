@@ -13,14 +13,19 @@ namespace VoiceMeter
         public StreamVisualizer VisualizerContext { get; set; }
         public DateTime StartTime => _model.Start;
         public DateTime EndTime => _model.End;
+        public Image Image { get; private set; }
         
         private StreamSegmentModel _model;
-        private Image _image;
-        private Rigidbody2D _rigidbody; 
+        private Rigidbody2D _rigidbody;
 
+
+        private void Awake()
+        {
+            Image = GetComponent<Image>();
+        }
+        
         private void Start()
         {
-            _image = GetComponent<Image>();
             UpdateBarWidth();
         }
         
@@ -58,23 +63,23 @@ namespace VoiceMeter
         private void UpdateOffset()
         {
             float widthValuePerSecond = WidthValuePerSecond();
-            _image.rectTransform.localPosition -= new Vector3(widthValuePerSecond * Time.fixedDeltaTime, 0, 0);
+            Image.rectTransform.localPosition -= new Vector3(widthValuePerSecond * Time.fixedDeltaTime, 0, 0);
         }
 
         private void UpdateBarWidth()
         {
-            if (_image == null)
+            if (Image == null)
             {
                 return;
             }
-            float parentWidth = VisualizerContext.rectTransform.rect.width;
+            float parentWidth = VisualizerContext.RectTransform.rect.width;
             float percent = DurationInSeconds / VisualizerContext.TimeWindow;
-            _image.rectTransform.sizeDelta = new Vector2(parentWidth * percent, _image.rectTransform.sizeDelta.y);
+            Image.rectTransform.sizeDelta = new Vector2(parentWidth * percent, Image.rectTransform.sizeDelta.y);
         }
         
         private float WidthValuePerSecond()
         {
-            return VisualizerContext.rectTransform.rect.width / VisualizerContext.TimeWindow;            
+            return VisualizerContext.RectTransform.rect.width / VisualizerContext.TimeWindow;            
         }
     }
 }

@@ -1,22 +1,28 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 namespace VoiceMeter
 {
     [RequireComponent(typeof(CanvasRenderer))]
-    public class StreamVisualizer : MaskableGraphic
+    [RequireComponent(typeof(RectTransform))]
+    public class StreamVisualizer : MonoBehaviour
     {
         [field: SerializeField] public float DisplayWindowInSeconds { get; private set; } = 30f;
         [field: SerializeField] public Color Color { get; set; } = Color.blue;
         
         public float TimeWindow { get; set; }
         public List<StreamSegment> StreamSegments { get; } = new();
+        public RectTransform RectTransform { get; private set; }
 
-        protected override void Start()
+
+        private void Awake()
         {
-            base.Start();
+            RectTransform = GetComponent<RectTransform>();
+        }
+        
+        private void Start()
+        {
             Color = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1f);
         }
 
@@ -45,6 +51,7 @@ namespace VoiceMeter
         {
             Vector3 position = Vector3.zero;
             StreamSegment segment = Instantiate(prefab, transform);
+            segment.Image.color = Color;
             segment.DestroyAfterInactiveSeconds = TimeWindow;
             segment.transform.localPosition = position;
             segment.VisualizerContext = this;
