@@ -70,55 +70,6 @@ namespace VoiceMeter
         private void VoiceEventCallback(VoiceReceiveEvent model)
         {
             _voiceReceiveEventQueue.Enqueue(model);
-            //TODO: move this stuff below into a helper method to process from the queue on update
-            // if (model.UserId != UserId)
-            // {
-            //     return;
-            // }
-            //
-            // DateTime modelEnd = model.TimeStamp + TimeSpan.FromMilliseconds(20f);            
-            //
-            // if (Visualizer.StreamSegments.Count == 0)
-            // {
-            //     // Visualizer.StreamSegments.Add(new StreamSegmentModel
-            //     // {
-            //     //     Start = model.TimeStamp,
-            //     //     End = modelEnd
-            //     // });
-            //     Visualizer.GenerateSegment(new StreamSegmentModel
-            //     {
-            //         Start = model.TimeStamp,
-            //         End = modelEnd
-            //     });
-            //     return;
-            // }
-            //
-            // StreamSegment lastSegment = Visualizer.StreamSegments.Last();
-            //
-            // TimeSpan gapInterval = model.TimeStamp - lastSegment.Model.End;
-            // if (gapInterval.TotalMilliseconds <= GapIntervalThresholdInMillis)
-            // {
-            //     Visualizer.StitchLastSegment(new StreamSegmentModel
-            //     {
-            //         Start = lastSegment.Model.Start,
-            //         End = modelEnd
-            //     });
-            //     // Visualizer.StreamSegments[^1].Model = new StreamSegmentModel
-            //     // {
-            //     //     Start = lastSegment.Model.Start,
-            //     //     End = modelEnd
-            //     // };
-            // }
-            // else
-            // {
-            //     //TODO: instead of just creating models that are all rendered by one script, instantiate individual segments, spawn them at the correct offset, and just animate them across until they exit the left side of the mask
-            //     //TODO: Stop making shit so complicated
-            //     Visualizer.GenerateSegment(new StreamSegmentModel
-            //     {
-            //         Start = model.TimeStamp,
-            //         End = modelEnd
-            //     });
-            // }
         }
 
         private void ProcessVoiceReceiveEventQueue()
@@ -135,11 +86,6 @@ namespace VoiceMeter
 
                 if (Visualizer.StreamSegments.Count == 0)
                 {
-                    // Visualizer.StreamSegments.Add(new StreamSegmentModel
-                    // {
-                    //     Start = model.TimeStamp,
-                    //     End = modelEnd
-                    // });
                     Visualizer.GenerateSegment(_streamSegmentPrefab, new StreamSegmentModel
                     {
                         Start = model.TimeStamp,
@@ -158,16 +104,9 @@ namespace VoiceMeter
                         Start = lastSegment.StartTime,
                         End = modelEnd
                     });
-                    // Visualizer.StreamSegments[^1].Model = new StreamSegmentModel
-                    // {
-                    //     Start = lastSegment.Model.Start,
-                    //     End = modelEnd
-                    // };
                 }
                 else
                 {
-                    //TODO: instead of just creating models that are all rendered by one script, instantiate individual segments, spawn them at the correct offset, and just animate them across until they exit the left side of the mask
-                    //TODO: Stop making shit so complicated
                     Visualizer.GenerateSegment(_streamSegmentPrefab, new StreamSegmentModel
                     {
                         Start = model.TimeStamp,
