@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace VoiceMeter
@@ -10,6 +11,7 @@ namespace VoiceMeter
     {
         [field: SerializeField] public float DisplayWindowInSeconds { get; private set; } = 30f;
         [field: SerializeField] public Color Color { get; set; } = Color.blue;
+        
         
         public float TimeWindow { get; set; }
         public List<StreamSegment> StreamSegments { get; } = new();

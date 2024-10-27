@@ -14,12 +14,12 @@ namespace VoiceMeter.Discord
     [RequireComponent(typeof(VerticalLayoutGroup))]
     public class DiscordVoiceListener : MonoBehaviour
     {
-        [SerializeField] private UserStreamDisplay _userStreamDisplayPrefab;
         [field: SerializeField] public float DisplayWindowInSeconds { get; private set; } = 30f;
+        [SerializeField] private UserStreamDisplay _userStreamDisplayPrefab;
         private Process _process;
         private StreamReader _processOutputStream;
-        private Dictionary<long, UserStreamDisplay> _userStreamDisplays = new();
-        private ConcurrentQueue<VoiceReceiveEvent> _newUserInitialEventQueue = new();
+        private readonly Dictionary<long, UserStreamDisplay> _userStreamDisplays = new();
+        private readonly ConcurrentQueue<VoiceReceiveEvent> _newUserInitialEventQueue = new();
         private Coroutine _processNewUserQueueCoroutine;
 
         public event Action<VoiceReceiveEvent> OnVoiceReceive;
@@ -40,6 +40,7 @@ namespace VoiceMeter.Discord
             {
                 _processNewUserQueueCoroutine = StartCoroutine(ProcessNewUserStreamQueue());
             }
+            UpdateTimeEquity();
         }
 
         private IEnumerator Connect()
@@ -153,6 +154,20 @@ namespace VoiceMeter.Discord
             newUserStream.UserId = initialEvent.UserId;
             newUserStream.Username.text = initialEvent.User.Username;
             _userStreamDisplays[initialEvent.UserId] = newUserStream;
+        }
+
+        private void UpdateTimeEquity()
+        {
+            float sum = 0;
+            foreach (UserStreamDisplay user in _userStreamDisplays.Values)
+            {
+                sum += user.ProcessedFrameCount;
+            }
+
+            foreach (UserStreamDisplay user in _userStreamDisplays.Values)
+            {
+                user.EquityMeter.DisplayPercent(user.ProcessedFrameCount / sum);
+            }
         }
     }
 }

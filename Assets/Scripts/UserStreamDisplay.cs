@@ -13,10 +13,12 @@ namespace VoiceMeter
     {
         [field: SerializeField][UsedImplicitly] public TextMeshProUGUI Username { get; set; }
         [field: SerializeField][UsedImplicitly] public StreamVisualizer Visualizer { get; set; }
+        [field: SerializeField] public EquityMeter EquityMeter { get; private set; }
         [SerializeField] private StreamSegment _streamSegmentPrefab;
         
         private const float GapIntervalThresholdInMillis = 25f;
-        private Queue<VoiceReceiveEvent> _voiceReceiveEventQueue = new();
+        
+        private readonly Queue<VoiceReceiveEvent> _voiceReceiveEventQueue = new();
 
         public DiscordVoiceListener Context
         {
@@ -29,6 +31,7 @@ namespace VoiceMeter
             }
         }
         public long UserId {  get; set; }
+        public int ProcessedFrameCount { get; private set; }
         private DiscordVoiceListener _context;
 
         private void Awake()
@@ -36,6 +39,7 @@ namespace VoiceMeter
             Debug.Assert(Username != null);
             Debug.Assert(Visualizer != null);
             Debug.Assert(_streamSegmentPrefab != null);
+            Debug.Assert(EquityMeter != null);
         }
 
         private void Start()
@@ -113,6 +117,8 @@ namespace VoiceMeter
                         End = modelEnd
                     });
                 }
+
+                ProcessedFrameCount++;
             }
         }
     }
