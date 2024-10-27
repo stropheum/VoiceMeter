@@ -158,8 +158,8 @@ Camera:
   m_GameObject: {fileID: 330585543}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 1, b: 0, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -577,9 +577,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a559843d5b0da8b40ac4cf82ce086ca0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  <DisplayWindowInSeconds>k__BackingField: 30
   _userStreamDisplayPrefab: {fileID: 642091036132905451, guid: 7c82236f090b2f147847aa5b9034dcd5,
     type: 3}
-  <DisplayWindowInSeconds>k__BackingField: 30
 --- !u!114 &1597295040
 MonoBehaviour:
   m_ObjectHideFlags: 0

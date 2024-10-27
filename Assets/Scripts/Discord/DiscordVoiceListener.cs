@@ -21,6 +21,7 @@ namespace VoiceMeter.Discord
         private readonly Dictionary<long, UserStreamDisplay> _userStreamDisplays = new();
         private readonly ConcurrentQueue<VoiceReceiveEvent> _newUserInitialEventQueue = new();
         private Coroutine _processNewUserQueueCoroutine;
+        private bool _processCoroutineRunning = false;
 
         public event Action<VoiceReceiveEvent> OnVoiceReceive;
 
@@ -36,7 +37,7 @@ namespace VoiceMeter.Discord
 
         private void Update()
         {
-            if (_processNewUserQueueCoroutine == null && !_newUserInitialEventQueue.IsEmpty)
+            if (!_processCoroutineRunning && !_newUserInitialEventQueue.IsEmpty)
             {
                 _processNewUserQueueCoroutine = StartCoroutine(ProcessNewUserStreamQueue());
             }
@@ -133,6 +134,7 @@ namespace VoiceMeter.Discord
 
         private IEnumerator ProcessNewUserStreamQueue()
         {
+            _processCoroutineRunning = true;
             while (!_newUserInitialEventQueue.IsEmpty)
             {
                 if (_newUserInitialEventQueue.TryDequeue(out VoiceReceiveEvent model))
@@ -142,9 +144,10 @@ namespace VoiceMeter.Discord
                         SpawnNewUserStreamDisplay(model);
                     }
                 }
-
                 yield return null;
             }
+
+            _processCoroutineRunning = false;
         }
 
         private void SpawnNewUserStreamDisplay(VoiceReceiveEvent initialEvent)

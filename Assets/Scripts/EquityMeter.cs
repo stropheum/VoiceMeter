@@ -26,7 +26,7 @@ namespace VoiceMeter
 
         private void UpdateColor()
         {
-            Color dangerColor = Color.red;
+            Color dangerColor = _bars.fillAmount < 0.5f ? Color.gray : Color.red;
             Color goodColor = Color.green;
             float safetyPercent = 1.0f - (Mathf.Abs(0.5f - _bars.fillAmount) * 2f);
             _bars.color = Color.Lerp(dangerColor, goodColor, safetyPercent);
