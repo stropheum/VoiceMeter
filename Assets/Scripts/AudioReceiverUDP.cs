@@ -30,6 +30,7 @@ namespace VoiceMeter
 
         private long _totalReceivedBytes = 0;
         public event Action<IPEndPoint, string, byte[]> OnDataReceived;
+        public event Action<string, string> OnUserEvent;  // New event for join/leave: username, event_type
 
         private void Start()
         {
@@ -76,14 +77,35 @@ namespace VoiceMeter
                     }
 
                     string username = System.Text.Encoding.UTF8.GetString(packet, 4, userLen);
-                    byte[] audioBytes = new byte[packet.Length - 4 - userLen];
-                    Array.Copy(packet, 4 + userLen, audioBytes, 0, audioBytes.Length);
+                    byte[] remaining = new byte[packet.Length - 4 - userLen];
+                    Array.Copy(packet, 4 + userLen, remaining, 0, remaining.Length);
 
-                    _totalReceivedBytes += audioBytes.Length;
-                    Debug.Log($"UDP received {audioBytes.Length} bytes from {username} (total: {_totalReceivedBytes})");
+                    // Check if this is an event packet (next 4 bytes length + short string like "joined")
+                    bool isEvent = false;
+                    if (remaining.Length >= 4)
+                    {
+                        int eventLen = (remaining[0] << 24) | (remaining[1] << 16) | (remaining[2] << 8) | remaining[3];
+                        if (eventLen > 0 && eventLen < 20 && remaining.Length == 4 + eventLen)
+                        {
+                            string eventType = System.Text.Encoding.UTF8.GetString(remaining, 4, eventLen).ToLower();
+                            if (eventType == "joined" || eventType == "left")
+                            {
+                                OnUserEvent?.Invoke(username, eventType);
+                                isEvent = true;
+                                Debug.Log($"Received {eventType} event for {username}");
+                            }
+                        }
+                    }
 
-                    _pcmQueue.Enqueue((username, audioBytes));
-                    OnDataReceived?.Invoke(remoteEp, username, audioBytes);
+                    if (!isEvent)
+                    {
+                        // Treat as audio
+                        _totalReceivedBytes += remaining.Length;
+                        Debug.Log($"UDP received {remaining.Length} bytes from {username} (total: {_totalReceivedBytes})");
+
+                        _pcmQueue.Enqueue((username, remaining));
+                        OnDataReceived?.Invoke(remoteEp, username, remaining);
+                    }
                 }
                 catch (Exception e)
                 {

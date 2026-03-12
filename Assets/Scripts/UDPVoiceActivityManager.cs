@@ -18,18 +18,10 @@ namespace VoiceMeter
         [Header("Settings")]
         [SerializeField] private float _displayWindowInSeconds = 30f;
         [SerializeField] private float _activityThreshold = 0.001f;
-        [SerializeField] private List<UserMapping> _userMappings = new();
-        private readonly Dictionary<string, string> _dynamicMappings = new();
-
-        [Serializable]
-        public class UserMapping
-        {
-            public string IPAddress;
-            public string Username;
-        }
 
         private readonly Dictionary<string, UserStreamDisplay> _userDisplays = new();
         private readonly ConcurrentQueue<(string userId, DateTime timestamp)> _eventQueue = new();
+        private readonly ConcurrentQueue<(string username, string eventType)> _userEventQueue = new();
 
         private void Awake()
         {
@@ -44,6 +36,7 @@ namespace VoiceMeter
             if (_audioReceiver != null)
             {
                 _audioReceiver.OnDataReceived += HandleDataReceived;
+                _audioReceiver.OnUserEvent += HandleUserEvent;
             }
         }
 
@@ -52,80 +45,67 @@ namespace VoiceMeter
             if (_audioReceiver != null)
             {
                 _audioReceiver.OnDataReceived -= HandleDataReceived;
-            }
-
-            var listener = FindFirstObjectByType<DiscordVoiceListener>();
-            if (listener != null)
-            {
-                listener.OnVoiceReceive -= HandleDiscordVoiceReceive;
+                _audioReceiver.OnUserEvent -= HandleUserEvent;
             }
         }
 
-        private void HandleDiscordVoiceReceive(VoiceReceiveEvent evt)
+        private void HandleUserEvent(string username, string eventType)
         {
-            Debug.Log($"[UDPVoiceActivityManager] Received Discord Voice Event: User={evt.User?.Username}, IP={evt.IP}");
-            if (!string.IsNullOrEmpty(evt.IP) && evt.User != null && !string.IsNullOrEmpty(evt.User.Username))
+            if (string.IsNullOrEmpty(username)) return;
+
+            _userEventQueue.Enqueue((username, eventType));
+        }
+
+        private void ProcessUserEvents()
+        {
+            while (_userEventQueue.TryDequeue(out (string username, string eventType) evt))
             {
-                _dynamicMappings[evt.IP] = evt.User.Username;
-                Debug.Log($"[UDPVoiceActivityManager] Dynamic mapping updated: {evt.IP} -> {evt.User.Username}");
+                string username = evt.username;
+                string eventType = evt.eventType;
+
+                if (eventType == "joined")
+                {
+                    if (_userDisplays.ContainsKey(username))
+                    {
+                        if (_userDisplays[username] != null)
+                        {
+                            Destroy(_userDisplays[username].gameObject);
+                        }
+                        _userDisplays.Remove(username);
+                        Debug.Log($"Destroyed stale display for left user: {username}");
+                    }
+
+                    UserStreamDisplay spawnedDisplay = SpawnUserDisplay(username);
+                    _userDisplays[username] = spawnedDisplay;
+                    Debug.Log($"Created display for joined user: {username}");
+                }
+                else if (eventType == "left")
+                {
+                    if (_userDisplays.TryGetValue(username, out UserStreamDisplay display))
+                    {
+                        if (display != null && display.gameObject != null)
+                        {
+                            Destroy(display.gameObject);
+                        }
+                        _userDisplays.Remove(username);
+                        Debug.Log($"Destroyed display for left user: {username}");
+                    }
+                }
             }
         }
 
         private void HandleDataReceived(IPEndPoint remoteEp, string username, byte[] data)
         {
-            if (data == null || data.Length == 0) return;
+            if (data == null || data.Length == 0 || string.IsNullOrEmpty(username)) return;
 
-            string remoteAddress = remoteEp.Address.ToString();
-            string remoteAddressAndPort = remoteEp.ToString();
             DateTime now = DateTime.Now;
 
-            // 1. Update dynamic mapping from the provided username (which came from the UDP packet prefix)
-            if (!string.IsNullOrEmpty(username))
-            {
-                _dynamicMappings[remoteAddress] = username;
-                
-                // Also update any existing display for this IP:port
-                if (_userDisplays.TryGetValue(remoteAddressAndPort, out var display))
-                {
-                    if (display.Username.text != username)
-                    {
-                        display.Username.text = username;
-                    }
-                }
-            }
-
-            // 2. Try to see if this is a JSON metadata message first (fallback/legacy)
-            if (data[0] == (byte)'{' || data[0] == (byte)'[')
-            {
-                try
-                {
-                    string json = System.Text.Encoding.UTF8.GetString(data);
-                    var message = Newtonsoft.Json.JsonConvert.DeserializeObject<MessageLogModel>(json);
-
-                    if (message != null && message.Name == "VoiceReceive" && !string.IsNullOrEmpty(message.Payload))
-                    {
-                        var model = Newtonsoft.Json.JsonConvert.DeserializeObject<VoiceReceiveEvent>(message.Payload);
-                        if (model != null && model.User != null && !string.IsNullOrEmpty(model.User.Username))
-                        {
-                            // Map the username to the IP address (without port)
-                            _dynamicMappings[remoteAddress] = model.User.Username;
-                            Debug.Log($"[UDPVoiceActivityManager] Dynamic mapping updated from UDP JSON: {remoteAddress} -> {model.User.Username}");
-                            return; // Don't process as audio
-                        }
-                    }
-                }
-                catch
-                {
-                    // Not valid JSON or doesn't match our model, fall back to audio check
-                }
-            }
-
-            // 2. Otherwise, treat as raw audio data and check for activity
+            // Treat as raw audio data and check for activity
             bool isActive = CheckActivity(data);
 
             if (isActive)
             {
-                _eventQueue.Enqueue((remoteAddressAndPort, now));
+                _eventQueue.Enqueue((username, now));
             }
         }
 
@@ -149,59 +129,21 @@ namespace VoiceMeter
 
         private void Update()
         {
+            ProcessUserEvents();
             ProcessEventQueue();
             UpdateTimeEquity();
         }
 
         private string GetUsername(string userId)
         {
-            // First attempt: Check dynamic mappings from Discord events (IP or IP:port)
-            if (_dynamicMappings.TryGetValue(userId, out string dynamicName))
-            {
-                return dynamicName;
-            }
-
-            // Second attempt: try to match only the IP address if the userId contains a port
-            int colonIndex = userId.LastIndexOf(':');
-            if (colonIndex != -1)
-            {
-                string ipOnly = userId.Substring(0, colonIndex);
-                if (_dynamicMappings.TryGetValue(ipOnly, out string dynamicIpName))
-                {
-                    return dynamicIpName;
-                }
-            }
-
-            // Third attempt: match the full userId in static mappings (IP:port)
-            foreach (var mapping in _userMappings)
-            {
-                if (mapping.IPAddress == userId)
-                {
-                    return mapping.Username;
-                }
-            }
-
-            // Fourth attempt: match only the IP address in static mappings
-            if (colonIndex != -1)
-            {
-                string ipOnly = userId.Substring(0, colonIndex);
-                foreach (var mapping in _userMappings)
-                {
-                    if (mapping.IPAddress == ipOnly)
-                    {
-                        return mapping.Username;
-                    }
-                }
-            }
-            
-            return userId;
+            return userId;  // Since userId is now the username
         }
 
         private void ProcessEventQueue()
         {
-            while (_eventQueue.TryDequeue(out var evt))
+            while (_eventQueue.TryDequeue(out (string userId, DateTime timestamp) evt))
             {
-                if (!_userDisplays.TryGetValue(evt.userId, out var display))
+                if (!_userDisplays.TryGetValue(evt.userId, out UserStreamDisplay display))
                 {
                     display = SpawnUserDisplay(evt.userId);
                     _userDisplays[evt.userId] = display;
@@ -225,8 +167,8 @@ namespace VoiceMeter
         {
             UserStreamDisplay display = Instantiate(_userStreamDisplayPrefab, transform);
 
-            display.Username.text = GetUsername(userId);
-            display.UserId = (long)userId.GetHashCode();
+            display.Username.text = userId;  // userId is username
+            display.UserId = userId.GetHashCode();
             display.Visualizer.TimeWindow = _displayWindowInSeconds;
             display.Context = null; // No Discord listener context
             return display;
@@ -235,14 +177,14 @@ namespace VoiceMeter
         private void UpdateTimeEquity()
         {
             float sum = 0;
-            foreach (var display in _userDisplays.Values)
+            foreach (UserStreamDisplay display in _userDisplays.Values)
             {
                 sum += display.ProcessedFrameCount;
             }
 
             if (sum <= 0) return;
 
-            foreach (var display in _userDisplays.Values)
+            foreach (UserStreamDisplay display in _userDisplays.Values)
             {
                 display.EquityMeter.DisplayPercent(display.ProcessedFrameCount / sum);
             }
