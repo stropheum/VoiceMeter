@@ -37,6 +37,11 @@ namespace VoiceMeter
         public int ProcessedFrameCount { get; private set; }
         private DiscordVoiceListener _context;
 
+        public void VoiceEventCallback(VoiceReceiveEvent model)
+        {
+            _voiceReceiveEventQueue.Enqueue(model);
+        }
+
         private void Awake()
         {
             Debug.Assert(Username != null);
@@ -47,8 +52,10 @@ namespace VoiceMeter
 
         private void Start()
         {
-            Debug.Assert(Context != null);
-            Visualizer.TimeWindow = Context.DisplayWindowInSeconds;
+            if (Context != null)
+            {
+                Visualizer.TimeWindow = Context.DisplayWindowInSeconds;
+            }
         }
 
         private void Update()
@@ -74,11 +81,6 @@ namespace VoiceMeter
             }
 
             context.OnVoiceReceive -= VoiceEventCallback;
-        }
-
-        private void VoiceEventCallback(VoiceReceiveEvent model)
-        {
-            _voiceReceiveEventQueue.Enqueue(model);
         }
 
         private void ProcessVoiceReceiveEventQueue()

@@ -83,6 +83,8 @@ namespace VoiceMeter.Discord
 
         private void ProcessOnOutputDataReceived(object sender, DataReceivedEventArgs e)
         {
+            if (string.IsNullOrEmpty(e.Data)) return;
+            
             try
             {
                 var message = JsonConvert.DeserializeObject<MessageLogModel>(e.Data);
@@ -94,18 +96,19 @@ namespace VoiceMeter.Discord
                 try
                 {
                     var model = JsonConvert.DeserializeObject<VoiceReceiveEvent>(message.Payload);
+                    Debug.Log($"[DiscordVoiceListener] De-serialized payload: User={model.User?.Username}, IP={model.IP}");
                     RecordVoiceEvent(model);
-                    Debug.Log(JsonConvert.SerializeObject(model));
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogError(exception);
+                    Debug.LogError($"[DiscordVoiceListener] Payload error: {exception.Message} (Payload: {message.Payload})");
                     throw;
                 }
             }
             catch (Exception _)
             {
-                Debug.Log($"Non-event log: {e.Data}");
+                // This will catch non-JSON lines (logs)
+                // Debug.Log($"Non-event log: {e.Data}");
             }
         }
 
@@ -132,7 +135,11 @@ namespace VoiceMeter.Discord
                 _newUserInitialEventQueue.Enqueue(model);
             }
 
-            OnVoiceReceive?.Invoke(model);
+            if (OnVoiceReceive != null)
+            {
+                // Debug.Log($"[DiscordVoiceListener] Invoking OnVoiceReceive for user {model.UserId}");
+                OnVoiceReceive.Invoke(model);
+            }
         }
 
         private IEnumerator ProcessNewUserStreamQueue()

@@ -11,6 +11,7 @@ namespace VoiceMeter.Discord
         [JsonProperty] public int Ssrc { get; set; }
         [JsonProperty] public long UserId { get; set; }
         [JsonProperty] public string Frame { get; set; }
+        [JsonProperty] public string IP { get; set; }
 
         public VoiceReceiveEvent(VoiceReceiveEvent rhs)
         {
@@ -24,6 +25,7 @@ namespace VoiceMeter.Discord
             Ssrc = rhs.Ssrc;
             UserId = rhs.UserId;
             Frame = rhs.Frame;
+            IP = rhs.IP;
         }
     }
 

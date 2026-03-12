@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -13,32 +14,32 @@ namespace VoiceMeter
 
         [Header("Audio Settings")]
         [SerializeField] private int _sampleRate = 48000;
-
         [SerializeField] private int _channels = 2;
         [SerializeField] private int _bufferSeconds = 5;
 
         private UdpClient _udpClient;
         private Thread _receiveThread;
-        private ConcurrentQueue<byte[]> _pcmQueue = new();
-        private AudioSource _audioSource;
+        private readonly ConcurrentQueue<(string username, byte[] audio)> _pcmQueue = new();
+        // private AudioSource _audioSource;
         private AudioClip _streamingClip;
 
         private float[] _audioBuffer;
-        private int _writePos = 0;
-        private int _readPos = 0;
-        private bool _hasData = false;
+        private int _writePos;
+        private int _readPos;
+        private bool _hasData;
 
         private long _totalReceivedBytes = 0;
+        public event Action<IPEndPoint, byte[]> OnDataReceived;
 
         private void Start()
         {
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            _audioSource.loop = true;
+            // _audioSource = gameObject.AddComponent<AudioSource>();
+            // _audioSource.loop = true;
 
             int totalSamples = _sampleRate * _bufferSeconds * _channels;
             _streamingClip = AudioClip.Create("DiscordStream", totalSamples, _channels, _sampleRate, true, OnAudioRead);
-            _audioSource.clip = _streamingClip;
-            _audioSource.Play();
+            // _audioSource.clip = _streamingClip;
+            // _audioSource.Play();
 
             _audioBuffer = new float[totalSamples];
 
@@ -58,15 +59,33 @@ namespace VoiceMeter
             {
                 try
                 {
-                    byte[] data = _udpClient.Receive(ref remoteEp);
-                    if (data.Length > 0)
+                    byte[] packet = _udpClient.Receive(ref remoteEp);
+                    if (packet == null || packet.Length < 4)
                     {
-                        _totalReceivedBytes += data.Length;
-                        Debug.Log($"UDP received {data.Length} bytes (total: {_totalReceivedBytes})");
-                        _pcmQueue.Enqueue(data);
+                        Debug.LogWarning($"Dropped tiny/invalid packet ({packet?.Length ?? 0} bytes)");
+                        continue;
                     }
+
+                    // Read big-endian (network order) 4-byte length
+                    int userLen = (packet[0] << 24) | (packet[1] << 16) | (packet[2] << 8) | packet[3];
+
+                    if (userLen < 0 || userLen > 100 || packet.Length < 4 + userLen)
+                    {
+                        Debug.LogWarning($"Incomplete/malformed packet: userLen={userLen}, totalLen={packet.Length}");
+                        continue;
+                    }
+
+                    string username = System.Text.Encoding.UTF8.GetString(packet, 4, userLen);
+                    byte[] audioBytes = new byte[packet.Length - 4 - userLen];
+                    Array.Copy(packet, 4 + userLen, audioBytes, 0, audioBytes.Length);
+
+                    _totalReceivedBytes += audioBytes.Length;
+                    Debug.Log($"UDP received {audioBytes.Length} bytes from {username} (total: {_totalReceivedBytes})");
+
+                    _pcmQueue.Enqueue((username, audioBytes));
+                    OnDataReceived?.Invoke(remoteEp, audioBytes);
                 }
-                catch (System.Exception e)
+                catch (Exception e)
                 {
                     Debug.LogError($"UDP receive error: {e.Message}");
                 }
@@ -75,17 +94,22 @@ namespace VoiceMeter
 
         private void Update()
         {
-            while (_pcmQueue.TryDequeue(out byte[] pcmBytes))
+            while (_pcmQueue.TryDequeue(out (string username, byte[] audio) tuple))
             {
+                string username = tuple.username;
+                byte[] pcmBytes = tuple.audio;
+
                 if (pcmBytes == null || pcmBytes.Length == 0)
                 {
                     continue;
                 }
 
+                Debug.Log($"Processing {pcmBytes.Length} audio bytes from user: {username}");
+
                 int sampleCount = pcmBytes.Length / 2;
                 for (int i = 0; i < sampleCount && _writePos < _audioBuffer.Length; i++)
                 {
-                    short sample = System.BitConverter.ToInt16(pcmBytes, i * 2);
+                    short sample = BitConverter.ToInt16(pcmBytes, i * 2);
                     _audioBuffer[_writePos] = sample / 32768f;
                     _writePos = (_writePos + 1) % _audioBuffer.Length;
                 }
@@ -98,7 +122,7 @@ namespace VoiceMeter
         {
             if (!_hasData)
             {
-                System.Array.Clear(data, 0, data.Length);
+                Array.Clear(data, 0, data.Length);
                 return;
             }
 
@@ -107,7 +131,7 @@ namespace VoiceMeter
 
             if (available < needed)
             {
-                System.Array.Clear(data, 0, data.Length);
+                Array.Clear(data, 0, data.Length);
                 for (int i = 0; i < available; i++)
                 {
                     data[i] = _audioBuffer[_readPos];
