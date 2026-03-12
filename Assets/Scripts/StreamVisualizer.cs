@@ -10,6 +10,8 @@ namespace VoiceMeter
     {
         [field: SerializeField] public float DisplayWindowInSeconds { get; private set; } = 30f;
         [field: SerializeField] public Color Color { get; set; } = Color.blue;
+        
+        [SerializeField] private Transform _segmentOrigin;
 
 
         public float TimeWindow { get; set; }
@@ -20,6 +22,8 @@ namespace VoiceMeter
         private void Awake()
         {
             RectTransform = GetComponent<RectTransform>();
+            
+            Debug.Assert(_segmentOrigin != null, nameof(_segmentOrigin) + " != null");
         }
 
         private void Start()
@@ -50,11 +54,11 @@ namespace VoiceMeter
 
         public void GenerateSegment(StreamSegment prefab, StreamSegmentModel model)
         {
-            Vector3 position = Vector3.zero;
+            Vector3 localPosition = _segmentOrigin.localPosition;
             StreamSegment segment = Instantiate(prefab, transform);
             segment.Image.color = Color;
             segment.DestroyAfterInactiveSeconds = TimeWindow;
-            segment.transform.localPosition = position;
+            segment.transform.localPosition = localPosition;
             segment.VisualizerContext = this;
             segment.SetStreamSegmentModel(model);
             StreamSegments.Add(segment);

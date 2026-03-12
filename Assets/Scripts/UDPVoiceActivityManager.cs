@@ -71,7 +71,7 @@ namespace VoiceMeter
             }
         }
 
-        private void HandleDataReceived(IPEndPoint remoteEp, byte[] data)
+        private void HandleDataReceived(IPEndPoint remoteEp, string username, byte[] data)
         {
             if (data == null || data.Length == 0) return;
 
@@ -79,7 +79,22 @@ namespace VoiceMeter
             string remoteAddressAndPort = remoteEp.ToString();
             DateTime now = DateTime.Now;
 
-            // 1. Try to see if this is a JSON metadata message first
+            // 1. Update dynamic mapping from the provided username (which came from the UDP packet prefix)
+            if (!string.IsNullOrEmpty(username))
+            {
+                _dynamicMappings[remoteAddress] = username;
+                
+                // Also update any existing display for this IP:port
+                if (_userDisplays.TryGetValue(remoteAddressAndPort, out var display))
+                {
+                    if (display.Username.text != username)
+                    {
+                        display.Username.text = username;
+                    }
+                }
+            }
+
+            // 2. Try to see if this is a JSON metadata message first (fallback/legacy)
             if (data[0] == (byte)'{' || data[0] == (byte)'[')
             {
                 try

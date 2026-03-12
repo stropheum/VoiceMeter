@@ -29,7 +29,7 @@ namespace VoiceMeter
         private bool _hasData;
 
         private long _totalReceivedBytes = 0;
-        public event Action<IPEndPoint, byte[]> OnDataReceived;
+        public event Action<IPEndPoint, string, byte[]> OnDataReceived;
 
         private void Start()
         {
@@ -83,7 +83,7 @@ namespace VoiceMeter
                     Debug.Log($"UDP received {audioBytes.Length} bytes from {username} (total: {_totalReceivedBytes})");
 
                     _pcmQueue.Enqueue((username, audioBytes));
-                    OnDataReceived?.Invoke(remoteEp, audioBytes);
+                    OnDataReceived?.Invoke(remoteEp, username, audioBytes);
                 }
                 catch (Exception e)
                 {
