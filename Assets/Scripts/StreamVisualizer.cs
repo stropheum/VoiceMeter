@@ -10,8 +10,8 @@ namespace VoiceMeter
     {
         [field: SerializeField] public float DisplayWindowInSeconds { get; private set; } = 30f;
         [field: SerializeField] public Color Color { get; set; } = Color.blue;
-        
-        
+
+
         public float TimeWindow { get; set; }
         public List<StreamSegment> StreamSegments { get; } = new();
         public RectTransform RectTransform { get; private set; }
@@ -21,7 +21,7 @@ namespace VoiceMeter
         {
             RectTransform = GetComponent<RectTransform>();
         }
-        
+
         private void Start()
         {
             Color = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1f);
@@ -38,8 +38,8 @@ namespace VoiceMeter
             {
                 return;
             }
-            
-            StreamSegments.RemoveAll(x => x== null);
+
+            StreamSegments.RemoveAll(x => x == null);
         }
 
         public void StitchLastSegment(StreamSegmentModel modelToStitch)

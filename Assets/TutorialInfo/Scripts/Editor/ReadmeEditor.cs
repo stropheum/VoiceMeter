@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace VoiceMeter.TutorialInfo.Scripts.Editor
 {
@@ -9,21 +11,20 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
     [InitializeOnLoad]
     public class ReadmeEditor : UnityEditor.Editor
     {
-        static string s_ShowedReadmeSessionStateName = "ReadmeEditor.showedReadme";
-    
-        static string s_ReadmeSourceDirectory = "Assets/TutorialInfo";
+        private static string s_ShowedReadmeSessionStateName = "ReadmeEditor.showedReadme";
 
-        const float k_Space = 16f;
+        private static string s_ReadmeSourceDirectory = "Assets/TutorialInfo";
+
+        private const float k_Space = 16f;
 
         static ReadmeEditor()
         {
             EditorApplication.delayCall += SelectReadmeAutomatically;
         }
 
-        static void RemoveTutorial()
+        private static void RemoveTutorial()
         {
             if (EditorUtility.DisplayDialog("Remove Readme Assets",
-            
                     $"All contents under {s_ReadmeSourceDirectory} will be removed, are you sure you want to proceed?",
                     "Proceed",
                     "Cancel"))
@@ -38,10 +39,10 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
                     Debug.Log($"Could not find the Readme folder at {s_ReadmeSourceDirectory}");
                 }
 
-                var readmeAsset = SelectReadme();
+                Readme readmeAsset = SelectReadme();
                 if (readmeAsset != null)
                 {
-                    var path = AssetDatabase.GetAssetPath(readmeAsset);
+                    string path = AssetDatabase.GetAssetPath(readmeAsset);
                     FileUtil.DeleteFileOrDirectory(path + ".meta");
                     FileUtil.DeleteFileOrDirectory(path);
                 }
@@ -50,11 +51,11 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
             }
         }
 
-        static void SelectReadmeAutomatically()
+        private static void SelectReadmeAutomatically()
         {
             if (!SessionState.GetBool(s_ShowedReadmeSessionStateName, false))
             {
-                var readme = SelectReadme();
+                Readme readme = SelectReadme();
                 SessionState.SetBool(s_ShowedReadmeSessionStateName, true);
 
                 if (readme && !readme.loadedLayout)
@@ -65,22 +66,22 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
             }
         }
 
-        static void LoadLayout()
+        private static void LoadLayout()
         {
-            var assembly = typeof(EditorApplication).Assembly;
-            var windowLayoutType = assembly.GetType("UnityEditor.WindowLayout", true);
-            var method = windowLayoutType.GetMethod("LoadWindowLayout", BindingFlags.Public | BindingFlags.Static);
+            Assembly assembly = typeof(EditorApplication).Assembly;
+            Type windowLayoutType = assembly.GetType("UnityEditor.WindowLayout", true);
+            MethodInfo method = windowLayoutType.GetMethod("LoadWindowLayout", BindingFlags.Public | BindingFlags.Static);
             method.Invoke(null, new object[] { Path.Combine(Application.dataPath, "TutorialInfo/Layout.wlt"), false });
         }
 
-        static Readme SelectReadme()
+        private static Readme SelectReadme()
         {
-            var ids = AssetDatabase.FindAssets("Readme t:Readme");
+            string[] ids = AssetDatabase.FindAssets("Readme t:Readme");
             if (ids.Length == 1)
             {
-                var readmeObject = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(ids[0]));
+                Object readmeObject = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(ids[0]));
 
-                Selection.objects = new UnityEngine.Object[] { readmeObject };
+                Selection.objects = new Object[] { readmeObject };
 
                 return (Readme)readmeObject;
             }
@@ -96,7 +97,7 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
             var readme = (Readme)target;
             Init();
 
-            var iconWidth = Mathf.Min(EditorGUIUtility.currentViewWidth / 3f - 20f, 128f);
+            float iconWidth = Mathf.Min(EditorGUIUtility.currentViewWidth / 3f - 20f, 128f);
 
             GUILayout.BeginHorizontal("In BigTitle");
             {
@@ -105,10 +106,10 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
                     GUILayout.Space(k_Space);
                     GUILayout.Label(readme.icon, GUILayout.Width(iconWidth), GUILayout.Height(iconWidth));
                 }
+
                 GUILayout.Space(k_Space);
                 GUILayout.BeginVertical();
                 {
-
                     GUILayout.FlexibleSpace();
                     GUILayout.Label(readme.title, TitleStyle);
                     GUILayout.FlexibleSpace();
@@ -124,7 +125,7 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
             var readme = (Readme)target;
             Init();
 
-            foreach (var section in readme.sections)
+            foreach (Readme.Section section in readme.sections)
             {
                 if (!string.IsNullOrEmpty(section.heading))
                 {
@@ -153,52 +154,35 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
             }
         }
 
-        bool m_Initialized;
+        private bool m_Initialized;
 
-        GUIStyle LinkStyle
-        {
-            get { return m_LinkStyle; }
-        }
+        private GUIStyle LinkStyle => m_LinkStyle;
 
-        [SerializeField]
-        GUIStyle m_LinkStyle;
+        [SerializeField] private GUIStyle m_LinkStyle;
 
-        GUIStyle TitleStyle
-        {
-            get { return m_TitleStyle; }
-        }
+        private GUIStyle TitleStyle => m_TitleStyle;
 
-        [SerializeField]
-        GUIStyle m_TitleStyle;
+        [SerializeField] private GUIStyle m_TitleStyle;
 
-        GUIStyle HeadingStyle
-        {
-            get { return m_HeadingStyle; }
-        }
+        private GUIStyle HeadingStyle => m_HeadingStyle;
 
-        [SerializeField]
-        GUIStyle m_HeadingStyle;
+        [SerializeField] private GUIStyle m_HeadingStyle;
 
-        GUIStyle BodyStyle
-        {
-            get { return m_BodyStyle; }
-        }
+        private GUIStyle BodyStyle => m_BodyStyle;
 
-        [SerializeField]
-        GUIStyle m_BodyStyle;
+        [SerializeField] private GUIStyle m_BodyStyle;
 
-        GUIStyle ButtonStyle
-        {
-            get { return m_ButtonStyle; }
-        }
+        private GUIStyle ButtonStyle => m_ButtonStyle;
 
-        [SerializeField]
-        GUIStyle m_ButtonStyle;
+        [SerializeField] private GUIStyle m_ButtonStyle;
 
-        void Init()
+        private void Init()
         {
             if (m_Initialized)
+            {
                 return;
+            }
+
             m_BodyStyle = new GUIStyle(EditorStyles.label);
             m_BodyStyle.wordWrap = true;
             m_BodyStyle.fontSize = 14;
@@ -224,9 +208,9 @@ namespace VoiceMeter.TutorialInfo.Scripts.Editor
             m_Initialized = true;
         }
 
-        bool LinkLabel(GUIContent label, params GUILayoutOption[] options)
+        private bool LinkLabel(GUIContent label, params GUILayoutOption[] options)
         {
-            var position = GUILayoutUtility.GetRect(label, LinkStyle, options);
+            Rect position = GUILayoutUtility.GetRect(label, LinkStyle, options);
 
             Handles.BeginGUI();
             Handles.color = LinkStyle.normal.textColor;

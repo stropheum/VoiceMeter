@@ -14,7 +14,7 @@ namespace VoiceMeter
         public DateTime StartTime => _model.Start;
         public DateTime EndTime => _model.End;
         public Image Image { get; private set; }
-        
+
         private StreamSegmentModel _model;
         private Rigidbody2D _rigidbody;
 
@@ -23,12 +23,12 @@ namespace VoiceMeter
         {
             Image = GetComponent<Image>();
         }
-        
+
         private void Start()
         {
             UpdateBarWidth();
         }
-        
+
         private void Update()
         {
             LifeSpan += Time.deltaTime;
@@ -59,7 +59,7 @@ namespace VoiceMeter
             _model.End = modelToStitch.End;
             UpdateBarWidth();
         }
-        
+
         private void UpdateOffset()
         {
             float widthValuePerSecond = WidthValuePerSecond();
@@ -72,14 +72,12 @@ namespace VoiceMeter
             {
                 return;
             }
+
             float parentWidth = VisualizerContext.RectTransform.rect.width;
             float percent = DurationInSeconds / VisualizerContext.TimeWindow;
             Image.rectTransform.sizeDelta = new Vector2(parentWidth * percent, Image.rectTransform.sizeDelta.y);
         }
-        
-        private float WidthValuePerSecond()
-        {
-            return VisualizerContext.RectTransform.rect.width / VisualizerContext.TimeWindow;            
-        }
+
+        private float WidthValuePerSecond() => VisualizerContext.RectTransform.rect.width / VisualizerContext.TimeWindow;
     }
 }

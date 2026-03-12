@@ -18,7 +18,7 @@ namespace VoiceMeter.Discord
             {
                 return;
             }
-            
+
             TimeStamp = rhs.TimeStamp;
             User = rhs.User;
             Ssrc = rhs.Ssrc;
@@ -26,7 +26,7 @@ namespace VoiceMeter.Discord
             Frame = rhs.Frame;
         }
     }
-    
+
     [Serializable]
     public class User
     {
@@ -51,7 +51,7 @@ namespace VoiceMeter.Discord
         [JsonProperty] public bool HasAvatarDecoration { get; set; }
         [JsonProperty] public DefaultAvatarUrl DefaultAvatarUrl { get; set; }
     }
-    
+
     [Serializable]
     public class AccentColor
     {

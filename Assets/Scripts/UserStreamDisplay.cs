@@ -11,13 +11,15 @@ namespace VoiceMeter
 {
     public class UserStreamDisplay : MonoBehaviour
     {
-        [field: SerializeField][UsedImplicitly] public TextMeshProUGUI Username { get; set; }
-        [field: SerializeField][UsedImplicitly] public StreamVisualizer Visualizer { get; set; }
+        [field: SerializeField] [UsedImplicitly]
+        public TextMeshProUGUI Username { get; set; }
+        [field: SerializeField] [UsedImplicitly]
+        public StreamVisualizer Visualizer { get; set; }
         [field: SerializeField] public EquityMeter EquityMeter { get; private set; }
         [SerializeField] private StreamSegment _streamSegmentPrefab;
-        
+
         private const float GapIntervalThresholdInMillis = 25f;
-        
+
         private readonly Queue<VoiceReceiveEvent> _voiceReceiveEventQueue = new();
 
         public DiscordVoiceListener Context
@@ -30,7 +32,8 @@ namespace VoiceMeter
                 RegisterVoiceEventCallback(_context);
             }
         }
-        public long UserId {  get; set; }
+
+        public long UserId { get; set; }
         public int ProcessedFrameCount { get; private set; }
         private DiscordVoiceListener _context;
 
@@ -59,6 +62,7 @@ namespace VoiceMeter
             {
                 return;
             }
+
             context.OnVoiceReceive += VoiceEventCallback;
         }
 
@@ -68,9 +72,10 @@ namespace VoiceMeter
             {
                 return;
             }
+
             context.OnVoiceReceive -= VoiceEventCallback;
         }
-        
+
         private void VoiceEventCallback(VoiceReceiveEvent model)
         {
             _voiceReceiveEventQueue.Enqueue(model);
@@ -85,8 +90,8 @@ namespace VoiceMeter
                 {
                     return;
                 }
-            
-                DateTime modelEnd = model.TimeStamp + TimeSpan.FromMilliseconds(20f);            
+
+                DateTime modelEnd = model.TimeStamp + TimeSpan.FromMilliseconds(20f);
 
                 if (Visualizer.StreamSegments.Count == 0)
                 {
@@ -97,9 +102,9 @@ namespace VoiceMeter
                     });
                     return;
                 }
-            
+
                 StreamSegment lastSegment = Visualizer.StreamSegments.Last();
-            
+
                 TimeSpan gapInterval = model.TimeStamp - lastSegment.EndTime;
                 if (gapInterval.TotalMilliseconds <= GapIntervalThresholdInMillis)
                 {

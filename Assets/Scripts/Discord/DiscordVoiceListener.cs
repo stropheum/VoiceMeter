@@ -29,7 +29,7 @@ namespace VoiceMeter.Discord
         {
             Debug.Assert(_userStreamDisplayPrefab != null);
         }
-        
+
         private void Start()
         {
             StartCoroutine(Connect());
@@ -41,6 +41,7 @@ namespace VoiceMeter.Discord
             {
                 _processNewUserQueueCoroutine = StartCoroutine(ProcessNewUserStreamQueue());
             }
+
             UpdateTimeEquity();
         }
 
@@ -57,19 +58,20 @@ namespace VoiceMeter.Discord
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                RedirectStandardInput = true,
+                RedirectStandardInput = true
             };
             _process = Process.Start(startInfo);
             Debug.Assert(_process != null);
             _process.OutputDataReceived += ProcessOnOutputDataReceived;
             _process.ErrorDataReceived += ProcessOnErrorDataReceived;
             _process.BeginOutputReadLine();
-        
+
             Debug.Log("starting read loop");
             while (!_process.HasExited)
-            {  
+            {
                 yield return null;
             }
+
             Debug.Log("exited read loop");
             _process.WaitForExit();
         }
@@ -88,7 +90,7 @@ namespace VoiceMeter.Discord
                 {
                     return;
                 }
-                
+
                 try
                 {
                     var model = JsonConvert.DeserializeObject<VoiceReceiveEvent>(message.Payload);
@@ -122,13 +124,14 @@ namespace VoiceMeter.Discord
                 _process.Kill();
             }
         }
-        
+
         private void RecordVoiceEvent(VoiceReceiveEvent model)
         {
             if (!_userStreamDisplays.ContainsKey(model.UserId))
             {
                 _newUserInitialEventQueue.Enqueue(model);
             }
+
             OnVoiceReceive?.Invoke(model);
         }
 
@@ -144,6 +147,7 @@ namespace VoiceMeter.Discord
                         SpawnNewUserStreamDisplay(model);
                     }
                 }
+
                 yield return null;
             }
 
